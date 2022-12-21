@@ -1,0 +1,64 @@
+Resources:
+  demoVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 100.0.0.0/16
+
+  demoSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 100.0.0.0/24
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref demoVPC
+
+  demoSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH access
+      VpcId: !Ref demoVPC
+      SecurityGroupIngress:
+          IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+
+  demoIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Foo
+        Value: Bar
+
+  IgwAttach:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref demoIGW
+      VpcId: !Ref demoVPC
+
+  demoRtb:
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      VpcId: !Ref demoVPC
+
+  RtbAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref demoRtb
+      SubnetId: !Ref demoSubnet
+
+  IGWRoute:
+    Type: AWS::EC2::Route
+    Properties: 
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref demoIGW
+      RouteTableId: !Ref demoRtb
+
+  NewEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: asg-demo-key3
+      SubnetId: !Ref demoSubnet
+      SecurityGroupIds:
+        - !Ref demoSG
+      ImageId: ami-07c2ae35d31367b3e
+      InstanceType: t2.micro
